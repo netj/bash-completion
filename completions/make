@@ -20,7 +20,7 @@ function _make_target_extract_script()
     fi
 
     cat <<EOF
-    1,/^# Files/                  d;            # skip until files section
+    /^# Make data base/,/^# Files/d;            # skip until files section
     /^# Not a target/,/^$/        d;            # skip not target blocks
     /^${prefix_pat}/,/^$/!        d;            # skip anything user dont want
 
@@ -138,11 +138,13 @@ _make()
         # recognise that possible completions are only going to be displayed
         # so only the base name is shown
         local mode=--
-        if (( COMP_TYPE != 9 )); then
+        case $COMP_TYPE in
+            # not for complete (TAB; 9) nor menu-complete (%; 37) nor listing completions (*; 42) nor unmodified word (@; 64)
+            33|63) # only for successive tabs (?; 63) and alternatives (!; 33)
             mode=-d # display-only mode
-        fi
+        esac
 
-        local reset=$( set +o | command grep -F posix ); set +o posix # <(...)
+        local reset=$( set +o | grep -F posix ); set +o posix # for <(...)
         COMPREPLY=( $( LC_ALL=C \
             make -npq "${makef[@]}" "${makef_dir[@]}" .DEFAULT 2>/dev/null | \
             sed -nf <(_make_target_extract_script $mode "$cur") ) )
